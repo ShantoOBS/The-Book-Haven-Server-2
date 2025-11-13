@@ -70,12 +70,41 @@ async function run() {
 
     const myDB = client.db("myDB");
     const myColl = myDB.collection("Book-store");
+    const commentColl = myDB.collection("Book-comments");
 
     app.post('/add-book', verifyByFireBase,async (req, res) => {
       const data = req.body;
       const result = await myColl.insertOne(data);
       res.send(result);
     })
+
+app.post('/add-comment', verifyByFireBase, async (req, res) => {
+  const data = req.body;
+  if(data.userEmail !== req.token_email)
+    return res.status(403).send({ message: "Forbidden access" });
+
+  const comment = {
+    bookId: data.bookId,
+    userEmail: data.userEmail,
+    userName: data.userName,
+    photoURL: data.photoURL,
+    comment: data.comment,
+    createdAt: new Date()
+  };
+
+  const result = await commentColl.insertOne(comment);
+  res.send(result);
+});
+
+
+app.get('/book-comments/:bookId', async (req, res) => {
+  const bookId = req.params.bookId;
+  const comments = await commentColl
+    .find({ bookId })
+    .sort({ createdAt: -1 })
+    .toArray();
+  res.send(comments);
+});
 
 
 
